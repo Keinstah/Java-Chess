@@ -1,0 +1,13 @@
+<html>
+<body>
+<b>Chess Board Game.</b><br />
+<br />
+Version: Alpha (1.02)<br />
+<br />
+Developed by Kevin King Agatep and Harvey Lee<br />
+Project in BSCS05<br />
+Instructor: Teresa De Guzman<br />
+<br />
+Copyright (c) 2014 Columban College, CCS Department
+</body>
+</html>
