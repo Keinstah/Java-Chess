@@ -1,29 +1,58 @@
 /**
- * Chess Board Game
- * ~~~~~~~~~~~ Working Features: ~~~~~~~~~~~ 
- * Movement - To move the chess piece
- * Capture - To capture an enemy's piece
- * Checking - To check the enemy's king 
- * Castling - To cast the King and Rook
- * ~~~~~~~~~~~ Non-Working Features: ~~~~~~~~~~~ 
- * Checkmate - If the either side of King is check and doesn't have anymore move to uncheck
- * Draw - This includes the 50-move rule and stalemate
+ * Chess Board Game (http://github.com/Feefty/Java-Chess.git)
+ * 
+ * @author 	Kevin King Agatep
+ * @desc	it is a simple chess board game in java
+ * 
+ * ~~~~~~~~~~~~ Working Features: ~~~~~~~~~~~~~ 
+ * Movement 	- To move the chess piece
+ * Capture 		- To capture an enemy's piece
+ * Checking 	- To check the enemy's king 
+ * Castling 	- To cast the King and Rook
+ * 
+ * ~~~~~~~~~~~ Non-Working Features: ~~~~~~~~~~ 
+ * Checkmate 	- A player's king is in check (threatened with capture) and there is no way to remove the threat. 
+ * 				Checkmating the opponent wins the game.
+ * Draw 		- is the result of a game ending in a tie. 
+ * 				Usually, in tournaments a draw is worth a half point to each player, 
+ * 				while a win is worth one point to the victor and none to the loser.
+ * En Passant 	- It is a special pawn capture, which can only occur immediately after a pawn moves two ranks forward from its starting position, 
+ * 				and an enemy pawn could have captured it had the pawn moved only one square forward.
  */
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 public class Chess implements ActionListener
 {
 	static JFrame frame = new JFrame();
 	JPanel totalGUI;
 	JLabel scoreLabel1, scoreLabel2, turnLabel;
-	JButton[][] buttons = new JButton[8][8];
+	static JButton[][] buttons = new JButton[8][8];
 	GridBagConstraints gbc = new GridBagConstraints();
 	int[][] pos = {
 			// default position
@@ -48,29 +77,47 @@ public class Chess implements ActionListener
 	final int X_COORD = 1;
 	final int CAST_KING = 0;
 	final int CAST_ROOK = 1;
-	
-	String[] msg = {
-				"Unable to move.",
-				"Invalid move position."
+	static String[] msg = {
+				"The move you are about to make is invalid.",
+				"You can not move to that location.",
+				"There was a problem making a GUI."
 	};
-
 	final int ERROR_CANNOT_MOVE_PIECE = 0;
 	final int ERROR_CANNOT_MOVE_THERE = 1;
-	String[] menuStr = {"Game", "Help"};
-	char[] menuChar = {'G', 'H'};
+	final static int ERROR_CANNOT_MAKE_GUI = 2;
+	String[] menuStr = {"Game", "Help", "Themes"};
+	char[] menuChar = {'G', 'H', 'T'};
 	String[][] menuItemsStr = {
 								{"Exit"},
-								{"About"}
+								{"About"},
+								{"Default", "Dark", "Light", "Blue"}
 							};
 	char[][] menuItemsChar = {
 								{'E'},
-								{'A'}
+								{'A'},
+								{'D', 'R', 'L', 'B'}
 							};
 	static JMenuBar menuBar = new JMenuBar();
 	JMenu[] menus = new JMenu[menuStr.length];
-	JMenuItem[][] menuItems = new JMenuItem[menuStr.length][5];
+	JMenuItem[][] menuItems = new JMenuItem[menuStr.length][15];
 	final Color HIGHLIGHT = Color.GREEN;
+	Color[][] THEMES = {
+						{Color.WHITE, Color.GRAY, Color.BLACK},
+						{Color.GRAY, Color.darkGray, Color.BLACK},
+						{Color.WHITE, Color.lightGray, Color.WHITE},
+						{Color.WHITE, Color.BLUE, Color.GRAY}
+					}; 
+	final int THEME_BLACKWHITE = 0;
+	final String[] PIECE_COLOR = {"WHITE", "BLACK"};
+	final static int TILE_SIZE = 80;
+	final static String TITLE = "Chess Board Game";
 	
+	/*
+	 * Create Content Pane
+	 * 
+	 * @desc	creating the gui of our application.
+	 * @return	JPanel
+	 */
 	public JPanel createContentPane()
 	{
 		totalGUI = new JPanel();
@@ -95,15 +142,13 @@ public class Chess implements ActionListener
 		
 
 		// turn label
-		turnLabel = new JLabel("Turn: White");
-		gbc.anchor = GridBagConstraints.NORTH;
-		gbc.weightx = 0.0;
-		gbc.weighty = 1.0;
+		turnLabel = new JLabel("Turn: "+ PIECE_COLOR[0]);
+		turnLabel.setFont(new Font("Arial", Font.BOLD, 12));
 		gbc.gridx = 7;
 		gbc.gridy = 0;
 		totalGUI.add(turnLabel, gbc);
 		
-		int board = 0;
+		int b = 0;
 		
 		for (int y = 0; y < 8; y++)
 		{
@@ -124,58 +169,104 @@ public class Chess implements ActionListener
 					buttons[y][x] = new JButton("", icon);
 				}
 				
-				if (board % 2 == 0)
-				{
-					buttons[y][x].setBackground(Color.white);
-					buttons[y][x].setForeground(Color.gray);
-				}
-				else
-				{
-					buttons[y][x].setBackground(Color.gray);
-					buttons[y][x].setForeground(Color.black);
-				}
+				setTheme(b % 2, x, y, THEME_BLACKWHITE);
 				
 				gbc.gridx = x;
 				gbc.gridy = y+1;
-				gbc.gridwidth = 1;
-				gbc.weightx = 0.0;
-				gbc.weighty = 0.0;
-				buttons[y][x].setFont(new Font("Arial", Font.PLAIN, 25));
-				buttons[y][x].setBorder(BorderFactory.createLineBorder(Color.black, 1));
-				buttons[y][x].setPreferredSize(new Dimension(80, 80));
+				buttons[y][x].setPreferredSize(new Dimension(TILE_SIZE, TILE_SIZE));
 				buttons[y][x].addActionListener(this);
 				totalGUI.add(buttons[y][x], gbc);
-				board++;
+				b++;
 			}
-			board++;
+			b++;
 		}
 		
 		totalGUI.setOpaque(true);
 		return totalGUI;
 	}
 	
+	/*
+	 * Set Theme
+	 * 
+	 * @desc 	setting the theme of board.
+	 * @param	(int) board
+	 * @param	(int) x
+	 * @param	(int) y
+	 * @param	(int) theme
+	 * @return	void
+	 */
+	private void setTheme(int b, int x, int y, int theme)
+	{
+		if (b != 0)
+		{
+			buttons[y][x].setBackground(THEMES[theme][0]);
+			buttons[y][x].setForeground(THEMES[theme][1]);
+		}
+		else
+		{
+			buttons[y][x].setBackground(THEMES[theme][1]);
+			buttons[y][x].setForeground(THEMES[theme][2]);
+		}
+		
+		buttons[y][x].setBorder(BorderFactory.createLineBorder(THEMES[theme][2], 1));
+	}
+	
+	/*
+	 * Get Last Move
+	 * 
+	 * @desc	getting the last move x and y coords.
+	 * @return	int[]
+	 */
 	private int[] getLastMove()
 	{
 		return lastMove;
 	}
 	
+	/*
+	 * Set Last Move
+	 * 
+	 * @desc	setting the last move coords.
+	 * @param	(int) x is the coord of the last move.
+	 * @param	(int) y is the coord of the last move.
+	 * @return 	void
+	 */
 	private void setLastMove(int x, int y)
 	{
 		lastMove[Y_COORD] = y;
 		lastMove[X_COORD] = x;
 	}
 	
+	/*
+	 * Is Move Performed
+	 * 
+	 * @desc	to check if the there's any move performed before.
+	 * @return 	boolean
+	 */
 	private boolean isMovePerformed()
 	{
 		return lastMove[Y_COORD] == -1 && lastMove[X_COORD] == -1 ? false : true;
 	}
 	
+	/*
+	 * Reset Last Move
+	 * 
+	 * @desc	reset the last move coords.
+	 * @return	void
+	 */
 	private void resetLastMove()
 	{
 		lastMove[Y_COORD] = -1;
 		lastMove[X_COORD] = -1;
 	}
 	
+	/*
+	 * Get Piece
+	 * 
+	 * @desc	getting the piece.
+	 * @param	(int) x is the coord of our piece.
+	 * @param	(int) y is the coord of our piece.
+	 * @return	int
+	 */
 	private int getPiece(int x, int y)
 	{
 		if ( y < 0 || y >= pos.length || x < 0 || x >= pos[y].length)
@@ -184,6 +275,13 @@ public class Chess implements ActionListener
 		return pos[y][x];
 	}
 	
+	/*
+	 * Get Piece Coord
+	 * 
+	 * @desc	getting the piece coords.
+	 * @param	(int) p is the piece.
+	 * @return	int[]
+	 */
 	private int[] getPieceCoord(int p)
 	{
 		int temp[] = new int[2];
@@ -205,11 +303,29 @@ public class Chess implements ActionListener
 		return temp;
 	}
 	
-	private String getMessage(int m)
+	/*
+	 * Get Message
+	 * 
+	 * @desc	getting the message.
+	 * @param	(int) m is the key of msg.
+	 * @return	String
+	 */
+	private static String getMessage(int m)
 	{
 		return msg[m];
 	}
 	
+	/*
+	 * Set Position
+	 * 
+	 * @desc 	setting the position of a piece.
+	 * @param	(int) fromX is the origin x coord.
+	 * @param	(int) fromY is the origin y coord.
+	 * @param 	(int) toX is the x coord of it's destination.
+	 * @param	(int) toY is the y coord of it's destination.
+	 * @param	(int) before is the piece.
+	 * @return	void
+	 */
 	private void setPosition(int fromX, int fromY, int toX, int toY, int before)
 	{
 		buttons[fromY][fromX].setBorder(BorderFactory.createLineBorder(Color.black, 1));
@@ -217,24 +333,40 @@ public class Chess implements ActionListener
 		trans(toX, toY, getPiece(fromX, fromY));
 		trans(fromX, fromY, before);
 		
-		turn++;
+		nextPlayer();
 		String turnStr = "";
 		
 		if (getCurrentPlayer() == 0)
-			turnStr = "White";
+			turnStr = PIECE_COLOR[0];
 		else
-			turnStr = "Black";
+			turnStr = PIECE_COLOR[1];
 			
 		turnLabel.setText("Turn: "+ turnStr);
 		
 		resetLastMove();
 	}
 	
+	/*
+	 * Set Position
+	 * 
+	 * @desc 	setting the position of a piece.
+	 * @param	(int) fromX is the origin of it's x coord.
+	 * @param	(int) fromY is the origin of it's y coord.
+	 * @param 	(int) toX is the x coord of it's destination.
+	 * @param	(int) toY is the y coord of it's destination.
+	 * @return	void
+	 */
 	private void setPosition(int fromX, int fromY, int toX, int toY)
 	{
 		setPosition(fromX, fromY, toX, toY, 0);
 	}
 	
+	/*
+	 * Transform
+	 * 
+	 * @desc 	transforming the piece to another piece.
+	 * @return 	void
+	 */
 	private void trans(int x, int y, int to)
 	{
 		pos[y][x] = to;
@@ -250,7 +382,15 @@ public class Chess implements ActionListener
 		}
 	}
 	
-	private boolean isCaptureable(int x, int y)
+	/*
+	 * Is Capturable
+	 * 
+	 * @desc	to check if the x and y coord capturable or if our piece can move to this coord.
+	 * @param	(int) x coord.
+	 * @param	(int) y coord.
+	 * @return	boolean
+	 */
+	private boolean isCapturable(int x, int y)
 	{
 		if (getCurrentPlayer() == 0 && getPiece(x, y) >= 1 && getPiece(x, y) <= 6 ||
 			getCurrentPlayer() == 1 && getPiece(x, y) >= 7 && getPiece(x, y) <= 12)
@@ -259,6 +399,14 @@ public class Chess implements ActionListener
 		return true;
 	}
 	
+	/*
+	 * Promote Pawn
+	 * 
+	 * @desc	promoting the pawn to another piece.
+	 * @param	(int) x is the x coord of our pawn.
+	 * @param	(int) y is the y coord of our pawn.
+	 * @return	void
+	 */
 	private void promotePawn(int x, int y)
 	{
 		int promote;
@@ -300,9 +448,19 @@ public class Chess implements ActionListener
 		}
 	}
 	
+	/*
+	 * Initialize Pawn
+	 * 
+	 * @desc	initialize the pawn to move or capture.
+	 * @param	(int) fromX is the origin x coord.
+	 * @param	(int) fromY is the origin y coord.
+	 * @param	(int) toX is the destination of x coord.
+	 * @param	(int) toY is the destination of y coord.
+	 * @return	boolean
+	 */
 	private boolean initPawn(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCaptureable(toX, toY))
+		if ( ! isCapturable(toX, toY))
 			return false;
 		
 		// moving itself
@@ -342,9 +500,19 @@ public class Chess implements ActionListener
 		return false;
 	}
 	
+	/*
+	 * Initialize Rook
+	 * 
+	 * @desc	initialize the rook to move or capture.
+	 * @param	(int) fromX is the origin of x coord.
+	 * @param	(int) fromY is the origin of y coord.
+	 * @param	(int) toX is the origin of x coord.
+	 * @param	(int) toY is the origin of y coord.
+	 * @return	boolean
+	 */
 	private boolean initRook(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCaptureable(toX, toY))
+		if ( ! isCapturable(toX, toY))
 			return false;
 		
 		// horizontally
@@ -405,9 +573,19 @@ public class Chess implements ActionListener
 		return false;
 	}
 	
+	/*
+	 * Initialize Bishop
+	 * 
+	 * @desc	initialize the bishop to move or capture.
+	 * @param	(int) fromX is the origin of x coord.
+	 * @param	(int) fromY is the origin of y coord.
+	 * @param	(int) toX is the origin of x coord.
+	 * @param	(int) toY is the origin of y coord.
+	 * @return	boolean
+	 */
 	private boolean initBishop(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCaptureable(toX, toY))
+		if ( ! isCapturable(toX, toY))
 			return false;
 		
 		int minY, minX, maxY, maxX, tempY, tempX;
@@ -499,17 +677,37 @@ public class Chess implements ActionListener
 		return false;
 	}
 	
+	/*
+	 * Initialize Queen
+	 * 
+	 * @desc	initialize the queen to move or capture.
+	 * @param	(int) fromX is the origin of x coord.
+	 * @param	(int) fromY is the origin of y coord.
+	 * @param	(int) toX is the origin of x coord.
+	 * @param	(int) toY is the origin of y coord.
+	 * @return	boolean
+	 */
 	private boolean initQueen(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCaptureable(toX, toY) || ! initBishop(fromX, fromY, toX, toY) && ! initRook(fromX, fromY, toX, toY))
+		if ( ! isCapturable(toX, toY) || ! initBishop(fromX, fromY, toX, toY) && ! initRook(fromX, fromY, toX, toY))
 			return false;
 		
 		return true;
 	}
-	
+
+	/*
+	 * Initialize Knight
+	 * 
+	 * @desc	initialize the knight to move or capture.
+	 * @param	(int) fromX is the origin of x coord.
+	 * @param	(int) fromY is the origin of y coord.
+	 * @param	(int) toX is the origin of x coord.
+	 * @param	(int) toY is the origin of y coord.
+	 * @return	boolean
+	 */
 	private boolean initKnight(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCaptureable(toX, toY))
+		if ( ! isCapturable(toX, toY))
 			return false;
 		
 		if (fromX+2 == toX && fromY+1 == toY ||
@@ -527,7 +725,17 @@ public class Chess implements ActionListener
 		
 		return false;
 	}
-	
+
+	/*
+	 * Initialize King
+	 * 
+	 * @desc	initialize the king to move or capture.
+	 * @param	(int) fromX is the origin of x coord.
+	 * @param	(int) fromY is the origin of y coord.
+	 * @param	(int) toX is the origin of x coord.
+	 * @param	(int) toY is the origin of y coord.
+	 * @return	boolean
+	 */
 	private boolean initKing(int fromX, int fromY, int toX, int toY)
 	{
 		if (fromX == toX && fromY+1 == toY ||
@@ -539,7 +747,7 @@ public class Chess implements ActionListener
 			fromX-1 == toX && fromY+1 == toY ||
 			fromX == toX && fromY-1 == toY)
 		{
-			if ( ! isCaptureable(toX, toY))
+			if ( ! isCapturable(toX, toY))
 				return false;
 			
 			if (castling[getCurrentPlayer()][CAST_KING] == 0)
@@ -583,6 +791,12 @@ public class Chess implements ActionListener
 		return false;
 	}
 	
+	/*
+	 * Is Check
+	 * 
+	 * @desc	to check if the king is checked.
+	 * @return	int
+	 */
 	private int isCheck()
 	{
 		int wKing[] = new int[2], bKing[] = new int[2];
@@ -1044,6 +1258,7 @@ public class Chess implements ActionListener
 							System.exit(0);
 						break;
 				}
+				break;
 			}
 		}
 		
@@ -1060,6 +1275,26 @@ public class Chess implements ActionListener
 						JOptionPane.showMessageDialog(null, aboutLabel, "About", JOptionPane.PLAIN_MESSAGE);
 						break;
 				}
+				break;
+			}
+		}
+		
+		for (int i = 0; i < menuItems[2].length; i++)
+		{
+			if (e.getSource() == menuItems[2][i])
+			{
+				int board = 0;
+				for (int y = 0; y < 8; y++)
+				{
+					for (int x = 0; x < 8; x++)
+					{
+
+						setTheme(board % 2, x, y, i);
+						board++;
+					}
+					board++;
+				}
+				break;
 			}
 		}
 		
@@ -1167,6 +1402,12 @@ public class Chess implements ActionListener
 		}
 	}
 	
+	/*
+	 * Get About
+	 * 
+	 * @desc	getting the about message.
+	 * @return	String
+	 */
 	private String getAbout()
 	{
 		String str = "";
@@ -1182,32 +1423,72 @@ public class Chess implements ActionListener
 		return str;
 	}
 	
+	/*
+	 * Next Player
+	 * 
+	 * @desc	set the next players turn.
+	 * @return	void
+	 */
+	private void nextPlayer()
+	{
+		turn++;
+	}
+	
+	/*
+	 * Get Current Player
+	 * 
+	 * @desc	getting the current player.
+	 * @return	int
+	 */
 	private int getCurrentPlayer()
 	{
 		return turn % 2;
 	}
 
+	/*
+	 * Invalid Move
+	 * 
+	 * @desc	display a message and reset the last move.
+	 * @param	(int) x is the coord of the piece.
+	 * @param	(int) y is the coord of the piece.
+	 * @return	void
+	 */
 	private void invalidMove(int x, int y)
 	{
 		JOptionPane.showMessageDialog(null, getMessage(ERROR_CANNOT_MOVE_THERE));
 		buttons[y][x].setBorder(BorderFactory.createLineBorder(Color.black, 1));
 		resetLastMove();
 	}
+	
+	private static BufferedImage getAppIcon()
+	{
+		BufferedImage img = null;
+		try {
+			img = ImageIO.read(
+					frame.getClass().getResource("/img/wKnight.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return img;
+	}
 
 	public static void createAndShowGUI()
 	{
 		Chess cb = new Chess();
-		frame.setTitle("ChessBoard Game");
+		frame.setTitle(TITLE);
 		frame.setContentPane(cb.createContentPane());
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(656, 710);
+		frame.setSize(TILE_SIZE*buttons.length+8, TILE_SIZE*buttons[0].length+65);
 		frame.setJMenuBar(menuBar);
 		frame.setVisible(true);
 		frame.setResizable(false);
+		frame.setIconImage(getAppIcon());
 	}
 	
 	public static void main(String... args)
 	{
+		
 		try {
 			SwingUtilities.invokeLater(new Runnable()
 			{
@@ -1217,7 +1498,7 @@ public class Chess implements ActionListener
 				}
 			});
 		} catch(Exception e) {
-			System.err.println("Unable to create a GUI");
+			System.err.println(getMessage(ERROR_CANNOT_MAKE_GUI));
 		}
 	}
 }
