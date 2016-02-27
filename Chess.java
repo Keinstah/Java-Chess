@@ -9,6 +9,9 @@
  * Capture 		- To capture an enemy's piece
  * Checking 	- To check the enemy's king 
  * Castling 	- To cast the King and Rook
+ * Board Theme	- To change the board's color way
+ * En Passant 	- It is a special pawn capture, which can only occur immediately after a pawn moves two ranks forward from its starting position, 
+ * 				and an enemy pawn could have captured it had the pawn moved only one square forward.
  * 
  * ~~~~~~~~~~~ Non-Working Features: ~~~~~~~~~~ 
  * Checkmate 	- A player's king is in check (threatened with capture) and there is no way to remove the threat. 
@@ -16,8 +19,7 @@
  * Draw 		- is the result of a game ending in a tie. 
  * 				Usually, in tournaments a draw is worth a half point to each player, 
  * 				while a win is worth one point to the victor and none to the loser.
- * En Passant 	- It is a special pawn capture, which can only occur immediately after a pawn moves two ranks forward from its starting position, 
- * 				and an enemy pawn could have captured it had the pawn moved only one square forward.
+ * 
  */
 
 import java.awt.Color;
@@ -47,7 +49,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-public class Chess implements ActionListener
+public class ChessGame implements ActionListener
 {
 	static JFrame frame = new JFrame();
 	JPanel totalGUI;
@@ -392,11 +394,8 @@ public class Chess implements ActionListener
 	 */
 	private boolean isCapturable(int x, int y)
 	{
-		if (getCurrentPlayer() == 0 && getPiece(x, y) >= 1 && getPiece(x, y) <= 6 ||
-			getCurrentPlayer() == 1 && getPiece(x, y) >= 7 && getPiece(x, y) <= 12)
-			return false;
-		
-		return true;
+		return getCurrentPlayer() == 1 && getPiece(x, y) >= 1 && getPiece(x, y) <= 6 ||
+				getCurrentPlayer() == 0 && getPiece(x, y) >= 7 && getPiece(x, y) <= 12;
 	}
 	
 	/*
@@ -460,9 +459,6 @@ public class Chess implements ActionListener
 	 */
 	private boolean initPawn(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCapturable(toX, toY))
-			return false;
-		
 		// moving itself
 		if (fromX == toX)
 		{
@@ -477,7 +473,7 @@ public class Chess implements ActionListener
 			else
 			// can move two blocks in front if it is from the default position
 			if (getCurrentPlayer() == 0 && fromY-2 == toY && fromY == 6 && getPiece(toX, toY) == 0 && getPiece(toX, toY+1) == 0 ||
-					getCurrentPlayer() == 1 && fromY+2 == toY && fromY == 1 && getPiece(toX, toY) == 0 && getPiece(toX, toY-1) == 0)
+				getCurrentPlayer() == 1 && fromY+2 == toY && fromY == 1 && getPiece(toX, toY) == 0 && getPiece(toX, toY-1) == 0)
 			{
 				setPosition(fromX, fromY, toX, toY);
 				return true;
@@ -488,9 +484,25 @@ public class Chess implements ActionListener
 		if (getCurrentPlayer() == 0 && fromX-1 == toX && fromY-1 == toY || getCurrentPlayer() == 0 && fromX+1 == toX && fromY-1 == toY ||
 			getCurrentPlayer() == 1 && fromX+1 == toX && fromY+1 == toY || getCurrentPlayer() == 1 && fromX-1 == toX && fromY+1 == toY)
 		{
-			// cannot move diagonally
-			if (getPiece(toX, toY) == 0)
-				return false;
+			if ( ! isCapturable(toX, toY))
+			{
+				// en passant
+				if ( ! (isCapturable(toX, toY+1) && getPiece(toX, toY+1) == 7 ||
+				 	isCapturable(toX, toY-1) && getPiece(toX, toY-1) == 1))
+					return false;
+				
+				if (getCurrentPlayer() == 0)
+					trans(toX, toY+1, 0);
+				else
+				if (getCurrentPlayer() == 1)
+					trans(toX, toY-1, 0);
+			}
+			else
+			{
+				// cannot capture an empty block
+				if (getPiece(toX, toY) == 0)
+					return false;
+			}
 			
 			setPosition(fromX, fromY, toX, toY);
 			promotePawn(toX, toY);
@@ -1475,7 +1487,7 @@ public class Chess implements ActionListener
 
 	public static void createAndShowGUI()
 	{
-		Chess cb = new Chess();
+		ChessGame cb = new ChessGame();
 		frame.setTitle(TITLE);
 		frame.setContentPane(cb.createContentPane());
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
