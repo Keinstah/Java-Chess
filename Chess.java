@@ -81,7 +81,7 @@ public class ChessGame implements ActionListener
 	final int CAST_ROOK = 1;
 	static String[] msg = {
 				"The move you are about to make is invalid.",
-				"You can not move to that location.",
+				"You cannot move to that location.",
 				"There was a problem making a GUI."
 	};
 	final int ERROR_CANNOT_MOVE_PIECE = 0;
@@ -487,8 +487,8 @@ public class ChessGame implements ActionListener
 			if ( ! isCapturable(toX, toY))
 			{
 				// en passant
-				if ( ! (isCapturable(toX, toY+1) && getPiece(toX, toY+1) == 7 ||
-				 	isCapturable(toX, toY-1) && getPiece(toX, toY-1) == 1))
+				if ( ! (isCapturable(toX, toY+1) && getPiece(toX, toY+1) == 7 && toY == 2 ||
+				 	isCapturable(toX, toY-1) && getPiece(toX, toY-1) == 1 && toY == 5))
 					return false;
 				
 				if (getCurrentPlayer() == 0)
@@ -524,7 +524,7 @@ public class ChessGame implements ActionListener
 	 */
 	private boolean initRook(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCapturable(toX, toY))
+		if ( ! isCapturable(toX, toY) && getPiece(toX, toY) != 0)
 			return false;
 		
 		// horizontally
@@ -597,7 +597,7 @@ public class ChessGame implements ActionListener
 	 */
 	private boolean initBishop(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCapturable(toX, toY))
+		if ( ! isCapturable(toX, toY) && getPiece(toX, toY) != 0)
 			return false;
 		
 		int minY, minX, maxY, maxX, tempY, tempX;
@@ -701,7 +701,7 @@ public class ChessGame implements ActionListener
 	 */
 	private boolean initQueen(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCapturable(toX, toY) || ! initBishop(fromX, fromY, toX, toY) && ! initRook(fromX, fromY, toX, toY))
+		if ( ! isCapturable(toX, toY)  && getPiece(toX, toY) != 0 || ! initBishop(fromX, fromY, toX, toY) && ! initRook(fromX, fromY, toX, toY))
 			return false;
 		
 		return true;
@@ -719,7 +719,7 @@ public class ChessGame implements ActionListener
 	 */
 	private boolean initKnight(int fromX, int fromY, int toX, int toY)
 	{
-		if ( ! isCapturable(toX, toY))
+		if ( ! isCapturable(toX, toY) && getPiece(toX, toY) != 0)
 			return false;
 		
 		if (fromX+2 == toX && fromY+1 == toY ||
@@ -759,7 +759,7 @@ public class ChessGame implements ActionListener
 			fromX-1 == toX && fromY+1 == toY ||
 			fromX == toX && fromY-1 == toY)
 		{
-			if ( ! isCapturable(toX, toY))
+			if ( ! isCapturable(toX, toY)  && getPiece(toX, toY) != 0)
 				return false;
 			
 			if (castling[getCurrentPlayer()][CAST_KING] == 0)
