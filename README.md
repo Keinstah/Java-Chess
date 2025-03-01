@@ -1,4 +1,4 @@
-# Chess Game in Java
+# Chess
 
 ## Overview
 This is a simple chess game implemented in Java, featuring key chess functionalities such as movement, capturing, checking, and castling. It offers a graphical user interface (GUI) to play the game, including support for board themes and special moves like En Passant.
