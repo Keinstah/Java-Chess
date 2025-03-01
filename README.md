@@ -23,7 +23,7 @@ This is a simple chess game implemented in Java, featuring key chess functionali
 ## How to Run
 1. Download or clone the repository:
    ```bash
-   git clone http://github.com/Feefty/Java-Chess.git
+   git clone http://github.com/Keinstah/Java-Chess.git
    ```
 2. Open the project in your favorite IDE (e.g., IntelliJ IDEA, Eclipse, etc.).
 3. Compile and run the `ChessGame` class.
